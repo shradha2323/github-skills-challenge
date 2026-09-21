@@ -1,28 +1,36 @@
 import json
+from pathlib import Path
 
-from anomaly_detector import AnomalyDetector
-from event_consumer import EventConsumer
-from event_producer import EventProducer
-from event_topic import EventTopic
+try:
+    from .anomaly_detector import AnomalyDetector
+    from .event_consumer import EventConsumer
+    from .event_producer import EventProducer
+    from .event_topic import EventTopic
+except ImportError:
+    from anomaly_detector import AnomalyDetector
+    from event_consumer import EventConsumer
+    from event_producer import EventProducer
+    from event_topic import EventTopic
 
 
 def load_data(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
+    base_dir = Path(__file__).resolve().parent.parent
+    resolved_path = (
+        base_dir / file_path
+    ).resolve() if not Path(file_path).is_absolute() else Path(file_path)
+
+    with open(resolved_path, "r", encoding="utf-8") as file:
         return json.load(file)
 
 
 def run_pipeline(file_path):
     data = load_data(file_path)
 
-    # INTENTIONAL ASSESSMENT ISSUE #2
     producer_topic = EventTopic("service-events")
 
     detector = AnomalyDetector()
     producer = EventProducer(producer_topic)
-
-    # INTENTIONAL ASSESSMENT ISSUE #3
-    consumer_topic = EventTopic("anomaly-events")
-    consumer = EventConsumer(consumer_topic)
+    consumer = EventConsumer(producer_topic)
 
     detected_events = []
 
